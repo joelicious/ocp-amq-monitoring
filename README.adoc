@@ -11,13 +11,13 @@ There is hopes to migrate material from various sources into this repository `ht
 
 == Openshift Alert Monitoring (v4.10)
 
-Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html
+Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html`
 
 The Alertmanager service handles alerts received from Prometheus, and is responsible for sending the alerts to external notification systems.
 
 === OpenShift Alerting Architecture
 
-Understanding the monitoring stack: https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html#understanding-the-monitoring-stack_monitoring-overview
+Understanding the monitoring stack: `https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html#understanding-the-monitoring-stack_monitoring-overview`
 
 It is important to understand the relationship between Alertmanager, Prometheus(s), and Thanos Querier.
 
@@ -28,7 +28,7 @@ then send the Alerts to Alertmanager so that they can be managed.
 
 === OpenShift Managing Alerts
 
-Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html
+Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html`
 
 The Alert Monitoring UI povides the mechanism to manage a set of Alerts, including the set of
 Alerting rules, Alerts, and Silences. As part of the Alert Monitoring capability, notifications can be sent to 
@@ -36,7 +36,9 @@ a configured receiver type.  As of OCP 4.10, these recevier types are: PagerDuty
 
 == Configuring Alert Receiver
 
-Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html#configuring-alert-receivers_managing-alerts
+Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html#configuring-alert-receivers_managing-alerts`
+
+=== Console 
 
 From the OpenShift Console, traverse to the following location:
 
@@ -46,29 +48,63 @@ This displays the Alert routing and Receivers configuration. By default, there i
 Watchdog entry where no Integration type has been specified. There is a "Create Receiver" button which can
 be used to create a new receiver.
 
-[NOTE]
+In the Create Receiver, a Name and Type needs to be specified.
+
+[TIP]
 ====
-If you would like to test alerting functionality, the http://webhook.site provides a generic URL that will accept
+If you would like to test web hook alerting functionality, the http://webhook.site provides a generic URL that will accept
 any POST from webhook functionality.
 ====
 
+For a Webhook URL, use the URL provided by webhook.site. If you wish to fire alerts that match exactly to a criteria, a 
+Routing Label can be specified.  The following are regular expression examples:
 
+- namespace: ^(openshift|kube)$
+- alertname: ^(Cluster|Cloud|Machine|Pod|Kube|MCD|Alertmanager|etcd|TargetDown|CPU|Node|Clock|Prometheus|Failing|Network|IPTable)$
 
+=== Command Line
 
+To view the currently active Alertmanager configuration into a file alertmanager.yaml.  If unable, an example alertmanager.yaml has
+provided in this repo (openshift-monitoring/EXAMPLE_CUSTOM_CONFIG_alertmanager.yaml)
 
+````
+$ oc -n openshift-monitoring get secret alertmanager-main --template='{{ index .data "alertmanager.yaml" }}' | base64 --decode > alertmanager.yaml
+````
 
+To update, edit the `alertmanager.yaml` with an addition stanza in the `routes` section.
 
+````
+global:
+  resolve_timeout: 5m
+route:
+ 
+  ...
 
+  routes:
 
+    ...
 
+    - receiver: Webhook Alert Testing
+      match_re:
+        severity : .*      
 
+receivers:
+- name: default
+- name: watchdog
+- name: Webhook Alert Testing
+  webhook_configs:
+    - url: 'https://webhook.site/c685d8d7-TESTING-REPLACE-0329b3025666'
+````
 
+Then apply the new configuration in the file:
 
+````
+$ oc -n openshift-monitoring create secret generic alertmanager-main --from-file=alertmanager.yaml --dry-run=client -o=yaml |  oc -n openshift-monitoring replace secret --filename=-
+````
 
-=== Enable User Workload Monitoring
+== Enable User Workload Monitoring
 
 Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/enabling-monitoring-for-user-defined-projects.html`
-
 
 
 First we need to https://docs.openshift.com/container-platform/4.11/monitoring/enabling-monitoring-for-user-defined-projects.html[enable] User Workload Monitoring by creating the related link:kustomize/env/openshift-monitoring[ConfigMaps].
