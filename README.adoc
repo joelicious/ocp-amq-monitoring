@@ -67,13 +67,13 @@ Routing Label can be specified.  The following are regular expression examples:
 To view the currently active Alertmanager configuration into a file alertmanager.yaml.  If unable, an example alertmanager.yaml has
 provided in this repo (openshift-monitoring/EXAMPLE_CUSTOM_CONFIG_alertmanager.yaml)
 
-````
+```
 $ oc -n openshift-monitoring get secret alertmanager-main --template='{{ index .data "alertmanager.yaml" }}' | base64 --decode > alertmanager.yaml
-````
+```
 
 To update, edit the `alertmanager.yaml` with an addition stanza in the `routes` section.
 
-````
+```
 global:
   resolve_timeout: 5m
 route:
@@ -94,13 +94,13 @@ receivers:
 - name: Webhook Alert Testing
   webhook_configs:
     - url: 'https://webhook.site/c685d8d7-TESTING-REPLACE-0329b3025666'
-````
+```
 
 Then apply the new configuration in the file:
 
-````
+```
 $ oc -n openshift-monitoring create secret generic alertmanager-main --from-file=alertmanager.yaml --dry-run=client -o=yaml |  oc -n openshift-monitoring replace secret --filename=-
-````
+```
 
 == Enable User Workload Monitoring
 
