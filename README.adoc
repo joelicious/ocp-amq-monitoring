@@ -4,16 +4,18 @@ Monitoring for AMQ on OpenShift using capabilities provided in OCP 4.10.x
 
 == Attributions
 
-The user-defined alerting material in this repository is based on content from the following repository 'https://github.com/bszeti/openshift-app-monitoring-grafana'
-from 'https://github.com/bszeti'.
+The user-defined alerting material in this repository is based on content from the following repository `https://github.com/bszeti/openshift-app-monitoring-grafanacl`
+from `https://github.com/bszeticl`.
 
-There is hopes to migrate material from various sources into this repository 'https://github.com/amq-broker-hub/amq-on-openshift'
+There is hopes to migrate material from various sources into this repository `https://github.com/amq-broker-hub/amq-on-openshiftcl`
 
 == Openshift Alert Monitoring (v4.10)
 
 Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html
 
 The Alertmanager service handles alerts received from Prometheus, and is responsible for sending the alerts to external notification systems.
+
+=== OpenShift Alerting Architecture
 
 Understanding the monitoring stack: https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html#understanding-the-monitoring-stack_monitoring-overview
 
@@ -24,15 +26,50 @@ kube-state-metrics, openshift-state-metrics, and node-exporter agents. For User-
 Prometheus operator manages Prometheus and Thanos Rules instances.  These Prometheus instances
 then send the Alerts to Alertmanager so that they can be managed.
 
+=== OpenShift Managing Alerts
+
 Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html
 
 The Alert Monitoring UI povides the mechanism to manage a set of Alerts, including the set of
-Alerting rules, Alerts, and Silences.
+Alerting rules, Alerts, and Silences. As part of the Alert Monitoring capability, notifications can be sent to 
+a configured receiver type.  As of OCP 4.10, these recevier types are: PagerDuty, Webhook, Email, Slack.
 
-As part of the Alert Monitoring capability, notifications can be sent to a configured receiver type.  As of
-OCP 4.10, these recevier types are: PagerDuty, Webhook, Email, Slack.
+== Configuring Alert Receiver
+
+Documentation reference: https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html#configuring-alert-receivers_managing-alerts
+
+From the OpenShift Console, traverse to the following location:
+
+Administration -> Cluster Settings -> Configuration -> Alertmanager
+
+This displays the Alert routing and Receivers configuration. By default, there is a Critical, Default, and 
+Watchdog entry where no Integration type has been specified. There is a "Create Receiver" button which can
+be used to create a new receiver.
+
+[NOTE]
+====
+If you would like to test alerting functionality, the http://webhook.site provides a generic URL that will accept
+any POST from webhook functionality.
+====
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 === Enable User Workload Monitoring
+
+Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/enabling-monitoring-for-user-defined-projects.html`
+
+
 
 First we need to https://docs.openshift.com/container-platform/4.11/monitoring/enabling-monitoring-for-user-defined-projects.html[enable] User Workload Monitoring by creating the related link:kustomize/env/openshift-monitoring[ConfigMaps].
 
