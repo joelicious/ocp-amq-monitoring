@@ -65,7 +65,7 @@ Routing Label can be specified.  The following are regular expression examples:
 === Command Line
 
 To view the currently active Alertmanager configuration into a file alertmanager.yaml.  If unable, an example alertmanager.yaml has
-provided in this repo (openshift-monitoring/EXAMPLE_CUSTOM_CONFIG_alertmanager.yaml)
+provided in this repo ( `openshift-monitoring/EXAMPLE_CUSTOM_CONFIG_alertmanager.yaml` )
 
 ```
 $ oc -n openshift-monitoring get secret alertmanager-main --template='{{ index .data "alertmanager.yaml" }}' | base64 --decode > alertmanager.yaml
@@ -77,13 +77,9 @@ To update, edit the `alertmanager.yaml` with an addition stanza in the `routes` 
 global:
   resolve_timeout: 5m
 route:
- 
   ...
-
   routes:
-
     ...
-
     - receiver: Webhook Alert Testing
       match_re:
         severity : .*      
@@ -106,13 +102,64 @@ $ oc -n openshift-monitoring create secret generic alertmanager-main --from-file
 
 Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/enabling-monitoring-for-user-defined-projects.html`
 
-
 First we need to https://docs.openshift.com/container-platform/4.11/monitoring/enabling-monitoring-for-user-defined-projects.html[enable] User Workload Monitoring by creating the related link:kustomize/env/openshift-monitoring[ConfigMaps].
 
+To determine the current cluster setting, run the following command:
+
 ```
-oc apply -k kustomize/env/openshift-monitoring
+oc describe configmap cluster-monitoring-config -n openshift-monitoring
 ```
 
+If enableUserWorkload parameter is false or not present, then the parameter is set `true`.
 
+```
+cat openshift-monitoring/cluster-monitoring-config.yaml | oc apply -f -
+```
+
+Next step is to apply a config map to the namespace hosting AMQ
+
+```
+cat openshift-monitoring/user-workload-monitoring-config.yaml | oc apply -f -
+```
+
+To verify that the user defined `prometheus-operator`, `prometheus-user-workload`, and `thanos-ruler-user-workload` pods are 
+running in the `openshift-user-workload-monitoring` project.
+
+```
+$ oc -n openshift-user-workload-monitoring get pod
+NAME                                   READY   STATUS    RESTARTS   AGE
+prometheus-operator-6568d65cbc-wtwzj   2/2     Running   0          52m
+prometheus-user-workload-0             6/6     Running   0          105s
+prometheus-user-workload-1             6/6     Running   0          2m3s
+thanos-ruler-user-workload-0           3/3     Running   0          119s
+thanos-ruler-user-workload-1           3/3     Running   0          2m3s
+```
+
+Create a namespace OR just use existing AMQ Broker namespace
+
+```
+$ oc policy add-role-to-user admin developer -n amq-710-playground
+clusterrole.rbac.authorization.k8s.io/admin added: "developer"
+```
+
+```
+$ oc policy add-role-to-user monitoring-edit developer -n amq-710-playground
+clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
+```
+
+Now that Workload Monitoring is configured, it is now time to create Prometheus Rules scoped to the
+user defined namespace.
+
+== Creating User Defined Prometheus
+
+For ActiveMQ, the are a number of Alerts that are recommended to understand
+the overall health of the broker.
+
+The following provides ..
+
+```
+$ cat amq-monitors/amq-monitoring-rules.yaml | oc apply -f -
+prometheusrule.monitoring.coreos.com/amq-monitoring-rules created
+```
 
 

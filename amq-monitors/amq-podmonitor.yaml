@@ -1,0 +1,13 @@
+ apiVersion: monitoring.coreos.com/v1
+  kind: PodMonitor
+  metadata:
+    name: prometheus-metrics-server-demo
+    namespace: amq-710-playground
+  spec:
+    selector:
+      matchLabels:
+       name: prometheus-metrics-server-demo
+    podMetricsEndpoints:
+    - scheme: http
+      targetPort: 8161
+      path: /metrics
