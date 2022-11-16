@@ -4,20 +4,18 @@ Monitoring for AMQ on OpenShift using capabilities provided in OCP 4.10.x
 
 == Attributions
 
-The user-defined alerting material in this repository is based on content from the following repository `https://github.com/bszeti/openshift-app-monitoring-grafanacl`
-from `https://github.com/bszeticl`.
+The user-defined alerting material in this repository is based on content from the following repository `https://github.com/bszeti/openshift-app-monitoring-grafana`
+from `https://github.com/bszeti`.
 
-There is hopes to migrate material from various sources into this repository `https://github.com/amq-broker-hub/amq-on-openshiftcl`
+There is hopes to migrate material from various sources into this repository `https://github.com/amq-broker-hub/amq-on-openshift`
 
 == Openshift Alert Monitoring (v4.10)
 
 Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html`
 
-The Alertmanager service handles alerts received from Prometheus, and is responsible for sending the alerts to external notification systems.
-
-=== OpenShift Alerting Architecture
-
-Understanding the monitoring stack: `https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html#understanding-the-monitoring-stack_monitoring-overview`
+The Alertmanager service handles alerts received from Prometheus, and is responsible for sending the alerts to 
+external notification systems. This architecture for this service is best described in the documentation
+located here: `https://docs.openshift.com/container-platform/4.10/monitoring/monitoring-overview.html#understanding-the-monitoring-stack_monitoring-overview`
 
 It is important to understand the relationship between Alertmanager, Prometheus(s), and Thanos Querier.
 
@@ -26,7 +24,7 @@ kube-state-metrics, openshift-state-metrics, and node-exporter agents. For User-
 Prometheus operator manages Prometheus and Thanos Rules instances.  These Prometheus instances
 then send the Alerts to Alertmanager so that they can be managed.
 
-=== OpenShift Managing Alerts
+=== OpenShift Managing Alerts (Cluster)
 
 Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html`
 
@@ -34,9 +32,21 @@ The Alert Monitoring UI povides the mechanism to manage a set of Alerts, includi
 Alerting rules, Alerts, and Silences. As part of the Alert Monitoring capability, notifications can be sent to 
 a configured receiver type.  As of OCP 4.10, these recevier types are: PagerDuty, Webhook, Email, Slack.
 
+The cluster providers an Alertmanager to manage the set of Alerts received from the cluster Prometheus. This
+Alertmanager can be further customized manage the set of Alerts received from the user defined projects, or
+alertanatively, a seperate Alertmanager can be user for user defined projects.
+
+The documentation for creating an additional Alertmanager for user defined projects can be found in the 
+OCP 4.11 Documenation located here: `https://docs.openshift.com/container-platform/4.11/monitoring/managing-alerts.html#applying-a-custom-configuration-to-alertmanager-for-user-defined-alert-routing_managing-alerts`.
+
 == Configuring Alert Receiver
 
 Documentation reference: `https://docs.openshift.com/container-platform/4.10/monitoring/managing-alerts.html#configuring-alert-receivers_managing-alerts`
+
+Of note, these directions are to extend the cluster Alertmanager as specified in the OCP 4.10 documentation.
+These instructions are necessary to listen to Alerts received from the cluster Prometheus, and are then
+extended for user defined projects. Alerts from User defined projects are configured through Thanos Ruler / 
+Prometheus.
 
 === Console 
 
@@ -110,7 +120,8 @@ To determine the current cluster setting, run the following command:
 oc describe configmap cluster-monitoring-config -n openshift-monitoring
 ```
 
-If enableUserWorkload parameter is false or not present, then the parameter is set `true`.
+If `enableUserWorkload` parameter is false or not present, then the parameter is set `true`.
+In addition, the `enableUserAlertmanagerConfig` is also set to `true`.
 
 ```
 cat openshift-monitoring/cluster-monitoring-config.yaml | oc apply -f -
@@ -135,14 +146,16 @@ thanos-ruler-user-workload-0           3/3     Running   0          119s
 thanos-ruler-user-workload-1           3/3     Running   0          2m3s
 ```
 
-Create a namespace OR just use existing AMQ Broker namespace
+== AMQ Namespace / Broker Configuration
+
+Traverse to the existing AMQ Broker namespace, or create a new namespace.  The namespace name
+is reference in the prometheus rules, so note the name of the namespace.
+
+Apply developer and monitoring edit roles to the namespace.
 
 ```
 $ oc policy add-role-to-user admin developer -n amq-710-playground
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
-```
-
-```
 $ oc policy add-role-to-user monitoring-edit developer -n amq-710-playground
 clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
@@ -150,12 +163,19 @@ clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 Now that Workload Monitoring is configured, it is now time to create Prometheus Rules scoped to the
 user defined namespace.
 
-== Creating User Defined Prometheus
+=== Creating User Defined Prometheus
 
 For ActiveMQ, the are a number of Alerts that are recommended to understand
 the overall health of the broker.
 
-The following provides ..
+The following set of rules provide the following:
+
+* AmqPodCrashLooping : If the pod is in waiting state ("CrashLoopBackOff") over a period of time.
+* AmqPodNotReady : If the pod (broker or broker operator) has been in a non-ready state for period of time.
+* AmqDeploymentGenerationMismatch : Amq deployment has failed.
+* AmqStatefulSetReplicasMismatch : The Amq stateful set has not matched the expected number of replicas.
+* AmqStatefulSetGenerationMismatch : The Amq stateful set generation does not match. It has failed and not been rolled back.
+* AmqStatefulSetUpdateNotRolledOut : The Amq stateful set update has not been rolled out.
 
 ```
 $ cat amq-monitors/amq-monitoring-rules.yaml | oc apply -f -
