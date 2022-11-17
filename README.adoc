@@ -151,11 +151,21 @@ thanos-ruler-user-workload-1           3/3     Running   0          2m3s
 Traverse to the existing AMQ Broker namespace, or create a new namespace.  The namespace name
 is reference in the prometheus rules, so note the name of the namespace.
 
-Apply developer and monitoring edit roles to the namespace.
+For alerts baed on AMQ Broker behevior, ensure that "enableMetricsPlugin" is enabled (true).
+
+To validate that metrics are available, traverse to the OCP Route(s) that access the 
+AMQ Console. By default, this Route contains "wconsj-" in the URL.  Using this location,
+append `/metrics` to the URL to view the data that can be scraped by Prometheus.
+
+=== Granting User Permission to Monitor
+
+Apply monitoring view/edit roles to the namespace.
 
 ```
-$ oc policy add-role-to-user admin developer -n amq-710-playground
-clusterrole.rbac.authorization.k8s.io/admin added: "developer"
+$ oc policy add-role-to-user monitoring-rules-view developer -n amq-710-playground
+clusterrole.rbac.authorization.k8s.io/monitoring-rules-view added: "developer"
+$ oc policy add-role-to-user monitoring-rules-edit developer -n amq-710-playground
+clusterrole.rbac.authorization.k8s.io/monitoring-rules-edit added: "developer"
 $ oc policy add-role-to-user monitoring-edit developer -n amq-710-playground
 clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
@@ -163,7 +173,7 @@ clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 Now that Workload Monitoring is configured, it is now time to create Prometheus Rules scoped to the
 user defined namespace.
 
-=== Creating User Defined Prometheus
+=== Creating User Defined Prometheus Rules
 
 For ActiveMQ, the are a number of Alerts that are recommended to understand
 the overall health of the broker.
@@ -180,6 +190,14 @@ The following set of rules provide the following:
 ```
 $ cat amq-monitors/amq-monitoring-rules.yaml | oc apply -f -
 prometheusrule.monitoring.coreos.com/amq-monitoring-rules created
+```
+
+
+To enable the monitoring of ActiveMQ Artemis Prometheus Metrics
+
+```
+$ cat amq-monitors/amq-servicemonitor.yaml | oc apply -f -
+servicemonitor.monitoring.coreos.com/ex-aao-app created
 ```
 
 

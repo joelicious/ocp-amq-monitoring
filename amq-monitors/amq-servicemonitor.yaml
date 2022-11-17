@@ -7,10 +7,12 @@ metadata:
   namespace: amq-710-playground
 spec:
   endpoints:
-  - interval: 30s
-    port: http
-    scheme: http
-    path: /metrics
+    - interval: 30s
+      port: wconsj-.*
+  podTargetLabels:
+    - ActiveMQArtemis
+    - application
   selector:
     matchLabels:
       app: ex-aao-app
+  jobLabel: ActiveMQArtemis
